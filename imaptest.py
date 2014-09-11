@@ -52,7 +52,7 @@ class imap_test(threading.Thread):
                         lock.acquire()
                         print 'Stopping:\t {}'.format(self.login)
                         lock.release()
-                        M.close()
+         #               M.close()
                         M.logout()
         def sleep(self):
                 time.sleep(random.randint(1,3))
