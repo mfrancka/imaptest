@@ -64,6 +64,7 @@ class imap_test(threading.Thread):
                         counter.end()
                         stats[self.number] = {'login_time':
                                               counter.counted_time}
+                        stats[self.number]['address'] = self.login
                         print('[{}]logged in:\t {} in {}s'.
                               format(self.number, self.login,
                                      counter.counted_time))
@@ -177,7 +178,26 @@ def main(argv):
                 else:
                     print('connected: {}'.format(len(stats)))
                     time.sleep(1)
-        print(stats)
+        statistics = showstats(stats)
+        statistics.show_long_times()
+
+
+class showstats:
+    def __init__(self, stats):
+        self.stats = stats
+
+    def show(self):
+        for i in self.stats.keys():
+            print(self.stats[i])
+
+    def show_long_times(self):
+        counter = 0
+        for i in self.stats.keys():
+            if self.stats[i]['login_time'] > 1:
+                print(self.stats[i])
+            else:
+                counter += 1
+        print('Hide {} results'.format(counter))
 
 if __name__ == '__main__':
         signal.signal(signal.SIGINT, sighandler)
