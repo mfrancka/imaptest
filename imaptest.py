@@ -26,6 +26,11 @@ import random, time, threading
 import csv, sys, signal
 
 
+class statistics:
+    def __init__(self):
+        pass
+
+
 class timer:
     def __init__(self):
         self.start_time = 0
@@ -39,14 +44,16 @@ class timer:
 
 
 class imap_test(threading.Thread):
-        def __init__(self, login, passwd, server):
+        def __init__(self, login, passwd, server, number):
                 threading.Thread.__init__(self)
                 self.login = login
                 self.passwd = passwd
                 self.server = server
+                self.number = number
 
         def run(self):
                 global running
+                global stats
                 counter = timer()
                 lock = threading.Lock()
                 try:
@@ -54,11 +61,12 @@ class imap_test(threading.Thread):
                         self.sleep()
                         counter.start()
                         M.login(self.login, self.passwd)
-                        lock.acquire()
                         counter.end()
-                        lock.release()
-                        print('logged in:\t {} in {}s'.
-                              format(self.login, counter.counted_time))
+                        stats[self.number] = {'login_time':
+                                              counter.counted_time}
+                        print('[{}]logged in:\t {} in {}s'.
+                              format(self.number, self.login,
+                                     counter.counted_time))
                 except Exception as e:
                         lock.acquire()
                         print('Login failed for {}.'.format(self.login))
@@ -70,12 +78,18 @@ class imap_test(threading.Thread):
                         while running:
                             counter.start()
                             typ, data = M.list()
-                            print(counter.end())
+                            counter.end()
+                            stats[self.number]['select_time'] =\
+                                counter.counted_time
                             self.sleep()
                         lock.acquire()
                         print('Stopping:\t {}'.format(self.login))
                         lock.release()
+                        counter.start()
                         M.logout()
+                        counter.end()
+                        stats[self.number]['logout_time'] =\
+                            counter.counted_time
 
         def sleep(self):
                 time.sleep(random.randint(1, 3))
@@ -117,6 +131,7 @@ def help():
 
 
 def main(argv):
+        global stats
         loginfile = 'logins.txt'
         master_password = None
         master_server = None
@@ -146,22 +161,27 @@ def main(argv):
         logins = read_logins(loginfile, master_password, master_server)
         if max_users == 0:
             max_users = len(logins)
+        thread_number = 0
         for credential in logins[:max_users]:
                 try:
                         threadx = imap_test(credential[0], credential[1],
-                                            credential[2])
+                                            credential[2], thread_number)
                         threadx.start()
                         threads.append(threadx)
+                        thread_number += 1
                 except Exception as errtxt:
                         print(errtxt)
         while True:
                 if not any([thread.isAlive() for thread in threads]):
                         break
                 else:
-                        time.sleep(1)
+                    print('connected: {}'.format(len(stats)))
+                    time.sleep(1)
+        print(stats)
 
 if __name__ == '__main__':
         signal.signal(signal.SIGINT, sighandler)
         signal.signal(signal.SIGTERM, sighandler)
         running = True
+        stats = {}
         main(sys.argv[1:])
