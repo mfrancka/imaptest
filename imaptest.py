@@ -85,10 +85,18 @@ class imap_test(threading.Thread):
                             counter.end()
                             stats[self.number]['list_time'] =\
                                 counter.counted_time
+                            counter.start()
                             typ, data = M.search(None, 'FROM', '""')
+                            counter.end()
+                            stats[self.number]['search_time'] =\
+                                counter.counted_time
                             if typ == 'OK' and data[0] != '':
                                 mess = data[0].split()[0]
+                                counter.start()
                                 M.fetch(mess, "(UID BODY[TEXT])")
+                                counter.end()
+                                stats[self.number]['fetch_time'] =\
+                                    counter.counted_time
                             counter.end()
                             stats[self.number]['list_time'] =\
                                 counter.counted_time
@@ -203,7 +211,7 @@ class showstats:
     def show_long_times(self):
         counter = 0
         for i in self.stats.keys():
-            if self.stats[i]['login_time'] > 1:
+            if self.stats[i]['login_time'] > 0.01:
                 print(self.stats[i])
             else:
                 counter += 1
