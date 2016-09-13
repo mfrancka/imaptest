@@ -80,7 +80,17 @@ class imap_test(threading.Thread):
                             counter.start()
                             typ, data = M.list()
                             counter.end()
-                            stats[self.number]['select_time'] =\
+                            counter.start()
+                            typ, data = M.select('INBOX')
+                            counter.end()
+                            stats[self.number]['list_time'] =\
+                                counter.counted_time
+                            typ, data = M.search(None, 'FROM', '""')
+                            if typ == 'OK' and data[0] != '':
+                                mess = data[0].split()[0]
+                                M.fetch(mess, "(UID BODY[TEXT])")
+                            counter.end()
+                            stats[self.number]['list_time'] =\
                                 counter.counted_time
                             self.sleep()
                         lock.acquire()
